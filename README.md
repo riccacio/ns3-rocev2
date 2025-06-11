@@ -1,7 +1,7 @@
 # ns3-rocev2
 
 Simulatore custom per il protocollo **RoCEv2 (RDMA over Converged Ethernet v2)**, basato su [ns-3](https://www.nsnam.org/).  
-Il modulo consente la simulazione di flussi RDMA su percorsi multipli con supporto per misorder, ACK, e log su file.
+Il modulo consente la simulazione di flussi RDMA su percorsi multipli con supporto per misorder e soluzioni alternative ai moduli hardware già esistenti.
 
 ---
 
@@ -9,9 +9,9 @@ Il modulo consente la simulazione di flussi RDMA su percorsi multipli con suppor
 
 ```
 ns3-rocev2/
-├── model/                # Moduli RoCEv2: client, server, forwarder
-├── examples/             # Esempi di simulazione (rocev2-skeleton)
-├── CMakeLists.txt        # Build del modulo come progetto separato
+├── model/                
+├── examples/             
+├── CMakeLists.txt        
 └── README.md
 ```
 

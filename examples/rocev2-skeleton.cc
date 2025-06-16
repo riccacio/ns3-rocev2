@@ -86,6 +86,7 @@ int main(int argc, char *argv[]) {
   serverApp->SetStartTime(Seconds(0));
   serverApp->SetStopTime(Seconds(1.5));
 
+
   // Install client on clientNode
   Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>();
 

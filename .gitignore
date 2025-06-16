@@ -1,0 +1,8 @@
+cmake-build-*/
+*.log
+*.o
+*.out
+*.a
+*.dylib
+.DS_Storecmake-build-*
+.DS_Store

@@ -3,10 +3,10 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 
-#include "ns3/roce-client-app.h"
-#include "ns3/roce-server-app.h"
-#include "ns3/roce-header-tag.h"
-#include "ns3/roce-forwarder-app.h"
+#include "../model/roce-client-app.h"
+#include "../model/roce-server-app.h"
+#include "../model/roce-header-tag.h"
+#include "../model/roce-forwarder-app.h"
 
 #include <fstream>
 #include <iostream>
@@ -68,13 +68,13 @@ int main(int argc, char *argv[]) {
 
 
   Ptr<RoceForwarderApp> forwarder1 = CreateObject<RoceForwarderApp>();
-  forwarder1->Setup(if2.GetAddress(1), 4791, "Switch 1");  // switch1 → server via link B
+  forwarder1->Setup(if2.GetAddress(1), 4791, "Switch 1",  if1.GetAddress(0));  // switch1 → server via link B
   switch1Node.Get(0)->AddApplication(forwarder1);
   forwarder1->SetStartTime(Seconds(0));
   forwarder1->SetStopTime(Seconds(1.0));
 
   Ptr<RoceForwarderApp> forwarder2 = CreateObject<RoceForwarderApp>();
-  forwarder2->Setup(if4.GetAddress(1), 4791, "Swicht 2");  // switch2 → server via link D
+  forwarder2->Setup(if4.GetAddress(1), 4791, "Swicht 2",  if3.GetAddress(0));  // switch2 → server via link D
   switch2Node.Get(0)->AddApplication(forwarder2);
   forwarder2->SetStartTime(Seconds(0));
   forwarder2->SetStopTime(Seconds(1.0));
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
   serverApp->Setup(Address(InetSocketAddress(if3.GetAddress(1))),4791);
   serverNode.Get(0)->AddApplication(serverApp);
   serverApp->SetStartTime(Seconds(0));
-  serverApp->SetStopTime(Seconds(1.0));
+  serverApp->SetStopTime(Seconds(1.5));
 
   // Install client on clientNode
   Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>();
@@ -96,22 +96,22 @@ int main(int argc, char *argv[]) {
 
   clientApp->Setup(path1, path2, 1024, 10, MilliSeconds(1.0));
   clientNode.Get(0)->AddApplication(clientApp);
-  clientApp->SetStartTime(Seconds(0));
+  clientApp->SetStartTime(Seconds(0.5));
   clientApp->SetStopTime(Seconds(1.0));
-
+  /*
   std::ofstream logFile("rocev2.log");
   std::streambuf* coutBuf = std::cout.rdbuf();  // salva il buffer originale
   std::cout.rdbuf(logFile.rdbuf());             // reindirizza cout al file
-
+*/
   Simulator::Run();
   Simulator::Destroy();
 
   std::cout << "\n--- STATISTICHE ---" << std::endl;
   std::cout << "Totale pacchetti ricevuti dal server: " << serverApp->GetPacketsReceived() << std::endl;
   std::cout << "Totale pacchetti ricevuti dal client: " << clientApp->GetPacketsReceived() << std::endl;
-
+/*
   std::cout.rdbuf(coutBuf);  // ripristina il cout standard
   std::cout << "\nLog scritto in rocev2.log" << std::endl;
-
+*/
   return 0;
 }

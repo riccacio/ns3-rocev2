@@ -3,27 +3,32 @@
 
 #include "ns3/application.h"
 #include "ns3/socket.h"
-#include "roce-header-tag.h"
-#include <string>
+#include "ns3/address.h"
+#include "ns3/ipv4-address.h"
 
 namespace ns3 {
 
-class RoceForwarderApp : public Application {
-public:
-  RoceForwarderApp();
-  virtual ~RoceForwarderApp();
-  void Setup(Ipv4Address forwardAddress, uint16_t port, std::string type);
+    class RoceForwarderApp : public Application {
+    public:
+        RoceForwarderApp();
+        virtual ~RoceForwarderApp();
 
-private:
-  virtual void StartApplication() override;
-  virtual void StopApplication() override;
-  void HandleRead(Ptr<Socket> socket);
+        void Setup(Ipv4Address dest, uint16_t port, std::string id, Ipv4Address sender);
 
-  Ptr<Socket> m_socket;
-  Ipv4Address m_forwardAddress;
-  uint16_t m_port;
-  std::string m_type;
-};
+    protected:
+        virtual void StartApplication() override;
+        virtual void StopApplication() override;
+
+    private:
+        void HandleRead(Ptr<Socket> socket);
+
+        Ptr<Socket> m_socket;
+        Ptr<Socket> m_forwardSocket;
+        Ipv4Address m_destAddr;
+        Ipv4Address m_senderAddr;
+        uint16_t m_port;
+        std::string m_id;
+    };
 
 } // namespace ns3
 

@@ -66,7 +66,10 @@ namespace ns3 {
         RoceHeaderTag tag(0x1234, 0x1A, m_psn, 0xDEADBEEF, clientIp);
         packet->AddPacketTag(tag);
 
-        m_socket->SendTo(packet, 0, destination);
+        // m_socket->SendTo(packet, 0, destination);
+
+        Ptr<Packet> pkt = Create<Packet>(m_packetSize);
+        m_nic->Send(pkt);
 
         std::cout << "Packet : " << tag << std::endl;
 
@@ -98,6 +101,10 @@ namespace ns3 {
 
     uint32_t RoceClientApp::GetPacketsReceived() const {
         return m_packetsReceived;
+    }
+
+    void RoceClientApp::SetNic(Ptr<RoceNic> nic) {
+        m_nic = nic;
     }
 
 } // namespace ns3

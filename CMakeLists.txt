@@ -36,4 +36,5 @@ target_link_libraries(rocev2-skeleton
     ns3-dev-internet-default
     ns3-dev-point-to-point-default
     ns3-dev-applications-default
+    ns3-dev-netanim-default
 )

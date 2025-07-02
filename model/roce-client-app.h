@@ -5,6 +5,7 @@
 #include "ns3/address.h"
 #include "ns3/socket.h"
 #include "ns3/ipv4-address.h"
+#include "roce-nic.h"
 
 
 namespace ns3 {
@@ -17,6 +18,7 @@ namespace ns3 {
         void Setup(Address path1, Address path2, uint32_t packetSize, uint32_t numPackets, Time interval);
 
         uint32_t GetPacketsReceived() const;
+        void SetNic(Ptr<RoceNic> nic);
 
     protected:
         virtual void StartApplication() override;
@@ -35,6 +37,7 @@ namespace ns3 {
         uint32_t m_sent;
         uint32_t m_psn;
         uint32_t m_packetsReceived;
+        Ptr<RoceNic> m_nic;
     };
 
 } // namespace ns3

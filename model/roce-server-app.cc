@@ -65,7 +65,10 @@ namespace ns3 {
                     return;
                 }
 
-                socket->SendTo(ackPacket, 0, InetSocketAddress(forwarderIp, m_port));
+                //socket->SendTo(ackPacket, 0, InetSocketAddress(forwarderIp, m_port));
+
+                Ptr<Packet> packet = Create<Packet>();
+                m_nic->Send(packet);
 
                 std::cout << "At time " << Simulator::Now().GetSeconds()
                           << "s, SERVER ha inviato ACK per PSN=" << tag.GetPsn()
@@ -76,6 +79,10 @@ namespace ns3 {
 
     uint32_t RoceServerApp::GetPacketsReceived() const {
         return m_packetsReceived;
+    }
+
+    void RoceServerApp::SetNic(Ptr<RoceNic> nic){
+        m_nic = nic;
     }
 
 } // namespace ns3

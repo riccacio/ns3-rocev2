@@ -4,6 +4,7 @@
 #include "ns3/application.h"
 #include "ns3/address.h"
 #include "ns3/socket.h"
+#include "roce-nic.h"
 
 
 namespace ns3 {
@@ -15,6 +16,7 @@ namespace ns3 {
 
         void Setup(Address address, uint16_t port);
         uint32_t GetPacketsReceived() const;
+        void SetNic(Ptr<RoceNic> nic);
 
     protected:
         virtual void StartApplication() override;
@@ -27,6 +29,7 @@ namespace ns3 {
         Address m_peer;
         uint16_t m_port;
         uint32_t m_packetsReceived;
+        Ptr<RoceNic> m_nic;
     };
 
 } // namespace ns3

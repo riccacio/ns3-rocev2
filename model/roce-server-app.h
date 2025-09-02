@@ -18,18 +18,16 @@ namespace ns3 {
         uint32_t GetPacketsReceived() const;
         void SetNic(Ptr<RoceNic> nic);
 
-    protected:
+    private:
         virtual void StartApplication() override;
         virtual void StopApplication() override;
 
-    private:
-        void HandleRead(Ptr<Socket> socket);
+        void HandlePacket(Ptr<Packet> pkt);
 
-        Ptr<Socket> m_socket;
+        Ptr<RoceNic> m_nic;
         Address m_peer;
         uint16_t m_port;
         uint32_t m_packetsReceived;
-        Ptr<RoceNic> m_nic;
     };
 
 } // namespace ns3

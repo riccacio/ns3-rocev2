@@ -13,9 +13,11 @@ class RoceHeaderTag : public Tag {
 public:
   RoceHeaderTag();
   RoceHeaderTag(uint32_t qpn, uint8_t opcode, uint32_t psn, uint32_t imm, Ipv4Address clientIp);
+  virtual ~RoceHeaderTag();
 
   static TypeId GetTypeId(void);
   virtual TypeId GetInstanceTypeId(void) const override;
+
   virtual void Serialize(TagBuffer i) const override;
   virtual void Deserialize(TagBuffer i) override;
   virtual uint32_t GetSerializedSize(void) const override;
@@ -29,8 +31,9 @@ public:
   Ipv4Address GetClientIp() const;
   void SetClientIp(Ipv4Address ip);
 
+  std::string toString();
 private:
-  uint32_t m_qpn;
+  uint32_t m_qpn; // query pair number, indica la connessione
   uint8_t m_opcode;
   uint32_t m_psn;
   uint32_t m_imm;

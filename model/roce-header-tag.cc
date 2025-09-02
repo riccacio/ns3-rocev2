@@ -7,6 +7,8 @@ RoceHeaderTag::RoceHeaderTag() : m_qpn(0), m_opcode(0), m_psn(0), m_imm(0) {}
 RoceHeaderTag::RoceHeaderTag(uint32_t qpn, uint8_t opcode, uint32_t psn, uint32_t imm, Ipv4Address clientIp)
   : m_qpn(qpn), m_opcode(opcode), m_psn(psn), m_imm(imm), m_clientIp(clientIp) {}
 
+RoceHeaderTag::~RoceHeaderTag () {}
+
 TypeId RoceHeaderTag::GetTypeId(void) {
   static TypeId tid = TypeId("ns3::RoceHeaderTag")
     .SetParent<Tag>()
@@ -63,5 +65,4 @@ std::ostream& operator<<(std::ostream& os, const RoceHeaderTag& tag){
     tag.Print(os);
     return os;
 }
-
 } // namespace ns3

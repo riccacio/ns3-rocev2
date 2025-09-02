@@ -28,8 +28,8 @@ file(GLOB_RECURSE MODEL_SOURCES "model/*.cc")
 add_library(rocev2 ${MODEL_SOURCES})
 
 # Simulazione principale
-add_executable(rocev2-skeleton examples/rocev2-skeleton.cc)
-target_link_libraries(rocev2-skeleton
+add_executable(main examples/main.cc)
+target_link_libraries(main
     rocev2
     ns3-dev-core-default
     ns3-dev-network-default

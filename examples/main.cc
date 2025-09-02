@@ -15,10 +15,9 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("rocev2-skeleton");
+NS_LOG_COMPONENT_DEFINE ("main");
 
 int main(int argc, char *argv[]) {
-    LogComponentEnable("rocev2-skeleton", LOG_LEVEL_INFO);
 
     NodeContainer clientNode, switch1Node, switch2Node, serverNode;
     clientNode.Create(1);
@@ -27,10 +26,10 @@ int main(int argc, char *argv[]) {
     serverNode.Create(1);
 
 
-    InternetStackHelper internet;
-    internet.InstallAll();
+    InternetStackHelper stack;
+    stack.InstallAll();
 
-    // Path 1
+    // Path 1 (veloce)
     PointToPointHelper p1;
     p1.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
     p1.SetChannelAttribute("Delay", StringValue("1ms"));
@@ -41,7 +40,7 @@ int main(int argc, char *argv[]) {
     p2.SetChannelAttribute("Delay", StringValue("1ms"));
     NetDeviceContainer devB = p2.Install(switch1Node.Get(0), serverNode.Get(0));
 
-    // Path 2
+    // Path 2 (lento)
     PointToPointHelper p3;
     p3.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
     p3.SetChannelAttribute("Delay", StringValue("2ms"));
@@ -66,62 +65,61 @@ int main(int argc, char *argv[]) {
     ipv4.SetBase("10.1.4.0", "255.255.255.0");
     Ipv4InterfaceContainer if4 = ipv4.Assign(devD);
 
-    // Enable routing
+    // Routing IP automatico
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+    // Server NIC
+    Ptr<RoceNic> serverNic = CreateObject<RoceNic>();
+    serverNode.Get(0)->AddApplication(serverNic);
+    serverNic->Setup(4791);
+    serverNic->SetPeer(if1.GetAddress(1)); // IP del Client
+    serverNic->SetStartTime(Seconds(0));
+    serverNic->SetStopTime(Seconds(1.5));
 
-    Ptr<RoceForwarderApp> forwarder1 = CreateObject<RoceForwarderApp>();
-    forwarder1->Setup(if2.GetAddress(1), 4791, "Switch 1",  if1.GetAddress(0));  // switch1 → server via link B
-    switch1Node.Get(0)->AddApplication(forwarder1);
-    forwarder1->SetStartTime(Seconds(0));
-    forwarder1->SetStopTime(Seconds(1.0));
-
-    Ptr<RoceForwarderApp> forwarder2 = CreateObject<RoceForwarderApp>();
-    forwarder2->Setup(if4.GetAddress(1), 4791, "Swicht 2",  if3.GetAddress(0));  // switch2 → server via link D
-    switch2Node.Get(0)->AddApplication(forwarder2);
-    forwarder2->SetStartTime(Seconds(0));
-    forwarder2->SetStopTime(Seconds(1.0));
-
-    // Install server on serverNode
+    // Server App
     Ptr<RoceServerApp> serverApp = CreateObject<RoceServerApp>();
-    serverApp->Setup(Address(InetSocketAddress(if3.GetAddress(1))),4791);
+    serverApp->SetNic(serverNic);
     serverNode.Get(0)->AddApplication(serverApp);
     serverApp->SetStartTime(Seconds(0));
     serverApp->SetStopTime(Seconds(1.5));
 
+    // Client NIC
+    Ptr<RoceNic> clientNic = CreateObject<RoceNic>();
+    clientNode.Get(0)->AddApplication(clientNic);
+    clientNic->Setup();
+    clientNic->SetPeer(if2.GetAddress(1)); // primo hop verso server
+    clientNic->SetStartTime(Seconds(0.0));
+    clientNic->SetStopTime(Seconds(2.0));
 
-    // Install client on clientNode
+    // Client App
     Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>();
-
-    // 🟡 CLIENT → usa IP del secondo path (più lento) per creare misorder
-    // Server ascolta su tutte le interfacce (non cambia)
-    Address path1 = InetSocketAddress(if1.GetAddress(1), 4791); // verso switch1
-    Address path2 = InetSocketAddress(if3.GetAddress(1), 4791); // verso switch2
-
-    clientApp->Setup(path1, path2, 1024, 10, MilliSeconds(1.0));
+    clientApp->Setup(    InetSocketAddress(if1.GetAddress(1), 4791), //path 1 verso switch 1
+                         InetSocketAddress(if3.GetAddress(1), 4791), //path 2 verso switch 2
+                         1024,
+                         10,
+                         MilliSeconds(1.0),
+                         clientNic
+    );
     clientNode.Get(0)->AddApplication(clientApp);
     clientApp->SetStartTime(Seconds(0.5));
-    clientApp->SetStopTime(Seconds(1.0));
-    /*
-    std::ofstream logFile("rocev2.log");
-    std::streambuf* coutBuf = std::cout.rdbuf();  // salva il buffer originale
-    std::cout.rdbuf(logFile.rdbuf());             // reindirizza cout al file
-    */
+    clientApp->SetStopTime(Seconds(1.5));
+/*
+    // NetAnim
     AnimationInterface::SetConstantPosition(clientNode.Get(0), 10, 30);
     AnimationInterface::SetConstantPosition(switch1Node.Get(0), 30, 40);
     AnimationInterface::SetConstantPosition(switch2Node.Get(0), 30, 20);
     AnimationInterface::SetConstantPosition(serverNode.Get(0), 50, 30);
+    AnimationInterface anim("rocev2.xml");
 
-    AnimationInterface anim("rocev2.xml"); // Output del file XML per NetAnim
+
+    */
+    std::cout << "Client NIC peer address: " << clientNic->GetPeerAddress() << std::endl;
     Simulator::Run();
     Simulator::Destroy();
 
     std::cout << "\n--- STATISTICHE ---" << std::endl;
     std::cout << "Totale pacchetti ricevuti dal server: " << serverApp->GetPacketsReceived() << std::endl;
     std::cout << "Totale pacchetti ricevuti dal client: " << clientApp->GetPacketsReceived() << std::endl;
-    /*
-    std::cout.rdbuf(coutBuf);  // ripristina il cout standard
-    std::cout << "\nLog scritto in rocev2.log" << std::endl;
-    */
+
     return 0;
 }

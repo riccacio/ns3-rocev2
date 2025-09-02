@@ -22,45 +22,45 @@ namespace ns3 {
         RoceNic();
         virtual ~RoceNic();
 
-        void Setup(Ipv4Address remoteIp, uint16_t port);
+        void Setup(uint16_t port = 4791);
         void Send(Ptr<Packet> pkt);
+
+        void SetPeer(Ipv4Address ip);
+        void SetReceiveCallback(Callback<void, Ptr<Packet>> cb);
+
+        Ipv4Address GetPeerAddress();
+
 
     private:
         virtual void StartApplication() override;
         virtual void StopApplication() override;
 
-        void ReceivePacket(Ptr<Socket> socket);
-        void ScheduleRetransmission();
-        void Retransmit();
-
-        void SendAck(uint32_t psn);
-
-        void CheckAckTimeout(uint32_t psn);
-        void ProcessSendQueue();
         void HandleRead(Ptr<Socket> socket);
+        void ProcessSendQueue();
+        void CheckAckTimeout(uint32_t psn);
+
+        void SendAck(uint32_t psn, Address to);
+
         Ipv4Address GetLocalAddress() const;
-
-        void HandleDataPacket(const RoceHeaderTag& tag, Ptr<Packet> pkt, const Address& from);
-        void HandleAck(const RoceHeaderTag& tag);
-        void RetransmitPacket(uint32_t psn);
-
-        std::map<uint32_t, Ptr<Packet>> m_unackedPackets;
 
         Ptr<Socket> m_socket;
         Ptr<Socket> m_sendSocket;
+
         Ipv4Address m_peerAddr;
         uint16_t m_port;
-        uint16_t m_psn;
+        uint32_t m_psn = 100;
+
         std::set<uint32_t> m_sentPsn;
-
-
-        uint32_t m_expectedPsn;
         std::set<uint32_t> m_receivedPsn;
         std::map<uint32_t, Ptr<Packet>> m_reorderBuffer;
-        std::queue<Ptr<Packet>> m_sendQueue; // coda
+        uint32_t m_expectedPsn = 100;
+
+        std::queue<Ptr<Packet>> m_sendQueue;
+        Callback<void, Ptr<Packet>> m_receiveCallback;
 
         EventId m_retransmitEvent;
-        Time m_retransmitTimeout;
+        Time m_retransmitTimeout = Seconds(0.01);
+
     };
 
 } // namespace ns3

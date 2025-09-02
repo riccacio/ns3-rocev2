@@ -15,16 +15,15 @@ namespace ns3 {
         RoceClientApp();
         virtual ~RoceClientApp();
 
-        void Setup(Address path1, Address path2, uint32_t packetSize, uint32_t numPackets, Time interval);
+        void Setup(Address path1, Address path2, uint32_t packetSize, uint32_t numPackets, Time interval, Ptr<RoceNic> nic);
 
         uint32_t GetPacketsReceived() const;
         void SetNic(Ptr<RoceNic> nic);
 
-    protected:
+    private:
         virtual void StartApplication() override;
         virtual void StopApplication() override;
 
-    private:
         void SendPacket();
         void HandleRead(Ptr<Socket> socket);
 
@@ -37,6 +36,7 @@ namespace ns3 {
         uint32_t m_sent;
         uint32_t m_psn;
         uint32_t m_packetsReceived;
+
         Ptr<RoceNic> m_nic;
     };
 

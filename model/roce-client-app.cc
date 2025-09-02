@@ -19,22 +19,22 @@ namespace ns3 {
 
     RoceClientApp::~RoceClientApp() {}
 
-    void RoceClientApp::Setup(Address path1, Address path2, uint32_t packetSize, uint32_t numPackets, Time interval) {
+    void RoceClientApp::Setup(Address path1, Address path2, uint32_t packetSize, uint32_t numPackets, Time interval, Ptr<RoceNic> nic) {
         m_peerPath1 = path1;
         m_peerPath2 = path2;
         m_packetSize = packetSize;
         m_nPackets = numPackets;
         m_interval = interval;
+        m_nic = nic;
+
+        m_psn = 100;
     }
 
     void RoceClientApp::StartApplication() {
-        m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
+        std::cout << "CLIENT start: invio di " << m_nPackets << " pacchetti." << std::endl;
 
-        InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), 4791);
-        m_socket->Bind(local);
-        m_socket->SetRecvCallback(MakeCallback(&RoceClientApp::HandleRead, this));
-
-        SendPacket();
+        m_sent = 0;
+        Simulator::ScheduleNow(&RoceClientApp::SendPacket, this);
     }
 
     void RoceClientApp::StopApplication() {
@@ -47,36 +47,16 @@ namespace ns3 {
         Ptr<Packet> packet = Create<Packet>(m_packetSize);
 
         // Scegli path e IP client in base a PSN
-        Address destination;
-        Ipv4Address clientIp;
-        Ptr<Ipv4> ipv4 = GetNode()->GetObject<Ipv4>();
+        Address destination = (m_psn % 2 == 0) ? m_peerPath1 : m_peerPath2;
 
-        if (m_psn % 2 == 0) {
-            destination = m_peerPath1;
-            clientIp = ipv4->GetAddress(1, 0).GetLocal();  // interfaccia su path1
-            std::cout << "\nAt time " << Simulator::Now().GetSeconds()
-                      << "s, CLIENT ha trasmesso (via path 1 IP Switch: " << InetSocketAddress::ConvertFrom(destination).GetIpv4()  << ")" << std::endl;
-        } else {
-            destination = m_peerPath2;
-            clientIp = ipv4->GetAddress(2, 0).GetLocal();  // interfaccia su path2
-            std::cout << "\nAt time " << Simulator::Now().GetSeconds()
-                      << "s, CLIENT ha trasmesso (via path 2 IP Switch: " << InetSocketAddress::ConvertFrom(destination).GetIpv4() << ")" << std::endl;
-        }
+        m_nic->SetPeer(InetSocketAddress::ConvertFrom(destination).GetIpv4());
+        m_nic->Send(packet);
 
-        RoceHeaderTag tag(0x1234, 0x1A, m_psn, 0xDEADBEEF, clientIp);
-        packet->AddPacketTag(tag);
+        std::cout << "CLIENT invia PSN=" << m_psn << " via path " << ((m_psn % 2 == 0) ? "1" : "2") << std::endl;
 
-        // m_socket->SendTo(packet, 0, destination);
-
-        Ptr<Packet> pkt = Create<Packet>(m_packetSize);
-        m_nic->Send(pkt);
-
-        std::cout << "Packet : " << tag << std::endl;
-
-        ++m_sent;
-        ++m_psn;
-
-        if (m_sent < m_nPackets) {
+        m_psn++;
+        m_sent++;
+        if(m_sent < m_nPackets) {
             Simulator::Schedule(m_interval, &RoceClientApp::SendPacket, this);
         }
     }
@@ -87,11 +67,11 @@ namespace ns3 {
             m_packetsReceived++;
             RoceHeaderTag tag;
             if (packet->PeekPacketTag(tag)) {
-                std::cout << "At time " << Simulator::Now().GetSeconds()
+                std::cout << "Al tempo " << Simulator::Now().GetSeconds()
                           << "s, CLIENT ha ricevuto: OPCODE=" << (uint32_t)tag.GetOpcode()
                           << " PSN=" << tag.GetPsn() << std::endl;
                 if (tag.GetOpcode() == 0xFF) {
-                    std::cout << "At time " << Simulator::Now().GetSeconds()
+                    std::cout << "Al tempo " << Simulator::Now().GetSeconds()
                               << "s, CLIENT ha ricevuto ACK per PSN=" << tag.GetPsn()
                               << " e IMM=" << tag.GetImm() << std::endl;
                 }

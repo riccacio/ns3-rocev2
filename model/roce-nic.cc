@@ -51,6 +51,7 @@ namespace ns3 {
         std::cout << "NIC started on " << GetLocalAddress() << std::endl;
     }*/
 
+
     void RoceNic::StartApplication() {
         std::cout << "[NIC] Inizio StartApplication" << std::endl;
 

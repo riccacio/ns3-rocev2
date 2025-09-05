@@ -66,6 +66,7 @@ namespace ns3 {
 
     };
 
+
 } // namespace ns3
 
 #endif // ROCE_NIC_H

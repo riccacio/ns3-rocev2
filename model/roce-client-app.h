@@ -41,6 +41,7 @@ namespace ns3 {
         Ptr<RoceNic> m_nic;
     };
 
+
 } // namespace ns3
 
 #endif // ROCE_CLIENT_APP_H

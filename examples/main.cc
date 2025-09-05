@@ -117,6 +117,7 @@ int main(int argc, char *argv[]) {
     */
 
 
+
     //std::cout << "Client NIC peer address: " << clientNic->GetPeerAddress() << std::endl;
     LogComponentEnable("RoceNic", LOG_LEVEL_INFO);
     Simulator::Run();

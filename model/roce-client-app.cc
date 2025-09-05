@@ -97,6 +97,7 @@ namespace ns3 {
         return m_sent;
     }
 
+
     void RoceClientApp::SetNic(Ptr<RoceNic> nic) {
         m_nic = nic;
     }

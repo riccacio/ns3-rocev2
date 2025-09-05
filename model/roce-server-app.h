@@ -11,10 +11,18 @@ namespace ns3 {
 
     class RoceServerApp : public Application {
     public:
+        static TypeId GetTypeId()
+        {
+            static TypeId tid = TypeId("ns3::RoceServerApp")
+                    .SetParent<Application>()
+                    .SetGroupName("Applications")
+                    .AddConstructor<RoceServerApp>();
+            return tid;
+        }
         RoceServerApp();
-        virtual ~RoceServerApp();
+        ~RoceServerApp() override;
 
-        void Setup(Address address, uint16_t port);
+        void Setup(InetSocketAddress address);
         uint32_t GetPacketsReceived() const;
         void SetNic(Ptr<RoceNic> nic);
 
@@ -24,10 +32,13 @@ namespace ns3 {
 
         void HandlePacket(Ptr<Packet> pkt);
 
+        void OnNicReceive(Ptr<Packet> pkt);
+
         Ptr<RoceNic> m_nic;
+        uint32_t m_packetsReceived = 0;
+        bool m_connected = false;
         Address m_peer;
         uint16_t m_port;
-        uint32_t m_packetsReceived;
     };
 
 } // namespace ns3

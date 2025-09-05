@@ -72,13 +72,14 @@ int main(int argc, char *argv[]) {
     Ptr<RoceNic> serverNic = CreateObject<RoceNic>();
     serverNode.Get(0)->AddApplication(serverNic);
     serverNic->Setup(4791);
-    serverNic->SetPeer(if1.GetAddress(1)); // IP del Client
+    //serverNic->SetPeer(if1.GetAddress(1)); // IP del Client
     serverNic->SetStartTime(Seconds(0));
     serverNic->SetStopTime(Seconds(1.5));
 
     // Server App
     Ptr<RoceServerApp> serverApp = CreateObject<RoceServerApp>();
     serverApp->SetNic(serverNic);
+    //serverApp->Setup(InetSocketAddress(if4.GetAddress(1),4791));
     serverNode.Get(0)->AddApplication(serverApp);
     serverApp->SetStartTime(Seconds(0));
     serverApp->SetStopTime(Seconds(1.5));
@@ -92,9 +93,10 @@ int main(int argc, char *argv[]) {
     clientNic->SetStopTime(Seconds(2.0));
 
     // Client App
-    Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>();
-    clientApp->Setup(    InetSocketAddress(if1.GetAddress(1), 4791), //path 1 verso switch 1
-                         InetSocketAddress(if3.GetAddress(1), 4791), //path 2 verso switch 2
+    Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>(InetSocketAddress(if2.GetAddress(1), 4791), // 10.1.2.2 (server lato path1)
+                                                               InetSocketAddress(if4.GetAddress(1), 4791)); // 10.1.4.2 (server lato path2)
+    clientApp->Setup(    InetSocketAddress(if2.GetAddress(1), 4791), //path 1 verso switch 1
+                         InetSocketAddress(if4.GetAddress(1), 4791), //path 2 verso switch 2
                          1024,
                          10,
                          MilliSeconds(1.0),
@@ -113,11 +115,15 @@ int main(int argc, char *argv[]) {
 
 
     */
-    std::cout << "Client NIC peer address: " << clientNic->GetPeerAddress() << std::endl;
+
+
+    //std::cout << "Client NIC peer address: " << clientNic->GetPeerAddress() << std::endl;
+    LogComponentEnable("RoceNic", LOG_LEVEL_INFO);
     Simulator::Run();
     Simulator::Destroy();
 
     std::cout << "\n--- STATISTICHE ---" << std::endl;
+    std::cout << "Totale pacchetti inviati dal client: " << clientApp->GetPacketsSent() << std::endl;
     std::cout << "Totale pacchetti ricevuti dal server: " << serverApp->GetPacketsReceived() << std::endl;
     std::cout << "Totale pacchetti ricevuti dal client: " << clientApp->GetPacketsReceived() << std::endl;
 

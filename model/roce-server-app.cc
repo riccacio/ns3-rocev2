@@ -12,35 +12,54 @@ namespace ns3 {
 
     NS_LOG_COMPONENT_DEFINE("RoceServerApp");
 
-    RoceServerApp::RoceServerApp() : m_packetsReceived(0) {}
+    RoceServerApp::RoceServerApp() : m_packetsReceived(0) {std::cout << "[SERVER APP] costruttore chiamato\n";}
     RoceServerApp::~RoceServerApp() {}
 
-    void RoceServerApp::Setup(Address address, uint16_t port) {
-        m_peer = address;
-        m_port = port;
+    void RoceServerApp::Setup(InetSocketAddress address) {
+        m_peer = address.GetIpv4();
+        m_port = address.GetPort();
+        std::cout<<"[SERVER APP] Setup\n";
     }
 
     void RoceServerApp::SetNic(Ptr<ns3::RoceNic> nic) {
         m_nic = nic;
     }
+    void RoceServerApp::StartApplication()
+    {
+        std::cout << "[SERVER APP] StartApplication" << std::endl;
 
-    void RoceServerApp::StartApplication() {
-        auto addr = InetSocketAddress::ConvertFrom(m_peer);
-        std::cout << "SERVER: " << addr.GetIpv4() << " in ascolto sulla porta: " << m_port << std::endl;
+        // Controlli difensivi
+        NS_ASSERT_MSG(m_nic, "RoceServerApp: NIC non impostato (chiama SetNic prima di AddApplication).");
+        NS_ASSERT_MSG(m_nic->GetNode() == GetNode(), "RoceServerApp: NIC e App sono su nodi diversi!");
 
-        m_nic = CreateObject<RoceNic>();
-        m_nic->Setup(m_port);
-        m_nic->SetReceiveCallback(MakeCallback(&RoceServerApp::HandlePacket, this));
-        GetNode()->AddApplication(m_nic);
-        m_nic->SetStartTime(Seconds(0.0));
-        m_nic->SetStopTime(Seconds(1.5)); //VERIFICA SE È DA ADATTARE...
-    }
-
-    void RoceServerApp::StopApplication() {
-        if (m_nic) {
-            m_nic = nullptr;
+        if (!m_connected)
+        {
+            // Registriamo una callback che riceve i pacchetti consegnati in-ordine dal NIC
+            m_nic->SetReceiveCallback(MakeCallback(&RoceServerApp::OnNicReceive, this));
+            m_connected = true;
         }
     }
+
+    void RoceServerApp::StopApplication()
+    {
+        std::cout << "[SERVER APP] StopApplication" << std::endl;
+        // Se il NIC sopravvive all’app, togliamo la callback
+        if (m_nic && m_connected)
+        {
+            m_nic->SetReceiveCallback(MakeCallback(&RoceServerApp::OnNicReceive, this));
+            m_connected = false;
+        }
+    }
+
+    void RoceServerApp::OnNicReceive(Ptr<Packet> pkt)
+    {
+        m_packetsReceived++;
+        uint32_t size = pkt->GetSize();
+        std::cout << "[SERVER APP] OnNicReceive: packet size=" << size << " (tot=" << m_packetsReceived << ")\n";
+        // Qui, se vuoi, puoi anche generare una risposta: crea un nuovo Packet
+        // e chiedi al NIC di spedirlo (il NIC gestisce header/tag/ack/reorder).
+    }
+
 
     void RoceServerApp::HandlePacket(Ptr<Packet> pkt) {
         RoceHeaderTag tag;

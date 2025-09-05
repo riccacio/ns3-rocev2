@@ -50,6 +50,9 @@ namespace ns3 {
         uint16_t m_port;
         uint32_t m_psn = 100;
 
+        bool m_sendBound = false;
+        bool m_sending = false;
+
         std::set<uint32_t> m_sentPsn;
         std::set<uint32_t> m_receivedPsn;
         std::map<uint32_t, Ptr<Packet>> m_reorderBuffer;

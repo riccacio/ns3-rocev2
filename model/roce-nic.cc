@@ -20,7 +20,7 @@ namespace ns3 {
     }
 
     RoceNic::RoceNic()
-            : m_port(4791), m_psn(100), m_expectedPsn(100), m_retransmitTimeout(Seconds(0.01)) {}
+            : m_port(4791), m_psn(100), m_expectedPsn(100), m_retransmitTimeout(Seconds(0.01)){}
 
     RoceNic::~RoceNic() {}
 
@@ -36,37 +36,22 @@ namespace ns3 {
         m_receiveCallback = cb;
     }
 
+    void RoceNic::SetAckCallback(Callback<void, uint32_t> cb) {
+        m_ackCb = cb;
+    }
+
     Ipv4Address RoceNic::GetPeerAddress(){
         return m_peerAddr;
     }
 
-    /*void RoceNic::StartApplication() {
-        m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-        InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), m_port);
-        m_socket->Bind(local);
-        m_socket->SetRecvCallback(MakeCallback(&RoceNic::HandleRead, this));
-
-        m_sendSocket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-
-        std::cout << "NIC started on " << GetLocalAddress() << std::endl;
-    }*/
-
-
     void RoceNic::StartApplication() {
-        std::cout << "[NIC] Inizio StartApplication" << std::endl;
-
         m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-        std::cout << "[NIC] Creato m_socket" << std::endl;
 
-        InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), m_port);
-        m_socket->Bind(local);
-        std::cout << "[NIC] Bind fatto su porta " << m_port << std::endl;
+        m_socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), m_port));
 
         m_socket->SetRecvCallback(MakeCallback(&RoceNic::HandleRead, this));
-        std::cout << "[NIC] Callback di ricezione settata" << std::endl;
 
         m_sendSocket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-        std::cout << "[NIC] Creato m_sendSocket" << std::endl;
 
         Ipv4Address localIp = GetLocalAddress();
         std::cout << "[NIC] StartApplication terminato, IP locale: " << localIp << std::endl;
@@ -76,87 +61,96 @@ namespace ns3 {
         if (m_socket) m_socket->Close();
         if (m_sendSocket) m_sendSocket->Close();
     }
+
     void RoceNic::Send(Ptr<Packet> packet) {
         RoceHeaderTag tag(0x1234, 0x1A, m_psn, 0xDEADBEEF, GetLocalAddress());
         packet->AddPacketTag(tag);
 
         m_sendQueue.push(packet);
 
-        // DEBUG
-        std::cout << "[NIC] Enqueue PSN=" << m_psn
+        std::cout << "NIC ha messo in coda PSN=" << m_psn
                   << " (queue=" << m_sendQueue.size() << ")\n";
 
-        // innesca la coda
         Simulator::ScheduleNow(&RoceNic::ProcessSendQueue, this);
         m_psn++;
     }
 
     void RoceNic::ProcessSendQueue() {
-        if (!m_sendBound) {
-            // lega il socket di invio all’IP della NIC (porta effimera)
-            InetSocketAddress local(GetLocalAddress(), 0);
-            if (m_sendSocket->Bind(local) != 0) {
-                std::cerr << "[NIC] ERROR: Bind m_sendSocket failed\n";
-                return;
-            }
-            m_sendBound = true;
-            std::cout << "[NIC] m_sendSocket bound on " << GetLocalAddress() << "\n";
-        }
+        if(m_sendQueue.empty()) return;
 
-        while (!m_sendQueue.empty()) {
-            Ptr<Packet> pkt = m_sendQueue.front();
-            m_sendQueue.pop();
+        Ptr<Packet> pkt = m_sendQueue.front();
+        m_sendQueue.pop();
 
-            if (m_peerAddr == Ipv4Address::GetAny()) {
-                std::cerr << "[NIC] ERROR: m_peerAddr not set, dropping packet.\n";
-                return;
-            }
-            InetSocketAddress dest(m_peerAddr, m_port);
-            Address a = dest;
+        InetSocketAddress dest(m_peerAddr, m_port);
 
-            std::cout << "[NIC] Sending to " << m_peerAddr
-                      << ":" << m_port
-                      << " (queue left=" << m_sendQueue.size() << ")\n";
+        std::cout << "[NIC] Inoltro a  " << m_peerAddr
+                  << ":" << m_port
+                  << " (rimasti nella queue=" << m_sendQueue.size() << ")\n";
 
-            m_sendSocket->SendTo(pkt, 0, a);
+        m_sendSocket->SendTo(pkt, 0, dest);
 
-            RoceHeaderTag tag;
-            pkt->PeekPacketTag(tag);
-            m_sentPsn.insert(tag.GetPsn());
+        RoceHeaderTag tag;
+        pkt->PeekPacketTag(tag);
+        m_sentPsn.insert(tag.GetPsn());
+        m_dataSent++;
 
-            NS_LOG_INFO("NIC sent PSN=" << tag.GetPsn());
-            Simulator::Schedule(m_retransmitTimeout,
-                                &RoceNic::CheckAckTimeout, this, tag.GetPsn());
-        }
+        std::cout << "NIC ha inoltrato PSN=" << tag.GetPsn() << std::endl;
+        Simulator::Schedule(m_retransmitTimeout,
+                            &RoceNic::CheckAckTimeout, this, tag.GetPsn());
     }
+
     void RoceNic::HandleRead(Ptr<Socket> socket) {
         Address from;
-        Ptr<Packet> packet = socket->RecvFrom(from);
-        RoceHeaderTag tag;
-        if (packet->PeekPacketTag(tag)) {
-            std::cout << "NIC received packet with PSN=" << tag.GetPsn() << std::endl;
-            if (InetSocketAddress::IsMatchingType(from)) {
-                InetSocketAddress inet = InetSocketAddress::ConvertFrom(from);
-                Ipv4Address src = inet.GetIpv4();
+        Ptr<Packet> packet;
 
-            } else {
-                std::cout << "from non è InetSocketAddress" << std::endl;
+        while ((packet = socket->RecvFrom(from))) {
+            RoceHeaderTag tag;
+            if (!packet->PeekPacketTag(tag)) continue;
+
+            if (tag.GetOpcode() == 0xFF) {
+                // ACK ricevuto
+                m_sentPsn.erase(tag.GetPsn());
+                m_ackReceived++;
+                if (!m_ackCb.IsNull()) m_ackCb(tag.GetPsn()); // notifica opzionale a chi vuole (es. ClientApp)
+                continue;
+            }
+
+            // Data packet ricevuto
+            m_dataReceived++;
+
+            if (m_receivedPsn.insert(tag.GetPsn()).second) {
+                if (tag.GetPsn() == m_expectedPsn) {
+                    if (!m_receiveCallback.IsNull()) m_receiveCallback(packet);
+                    m_expectedPsn++;
+                    while (m_reorderBuffer.count(m_expectedPsn)) {
+                        if (!m_receiveCallback.IsNull()) m_receiveCallback(m_reorderBuffer[m_expectedPsn]);
+                        m_reorderBuffer.erase(m_expectedPsn);
+                        m_expectedPsn++;
+                    }
+                } else {
+                    m_reorderBuffer[tag.GetPsn()] = packet;
+                }
+                // ⬇️ Genera ACK con il NIC del server
+                SendAck(tag.GetPsn(), from);
             }
         }
     }
 
-    void RoceNic::SendAck(uint32_t psn, ns3::Address to) {
+    void RoceNic::SendAck(uint32_t psn, Address from) {
         Ptr<Packet> ack = Create<Packet>(0);
         RoceHeaderTag ackTag(0x5678, 0xFF, psn, psn, GetLocalAddress());
         ack->AddPacketTag(ackTag);
-        m_sendSocket->SendTo(ack, 0, to);
-        std::cout << "NIC sent ACK for PSN=" << psn << std::endl;
+
+        // rimanda all'IP sorgente del pacchetto, forzando la porta 4791 del peer
+        Ipv4Address srcIp = InetSocketAddress::ConvertFrom(from).GetIpv4();
+        Address to = InetSocketAddress(srcIp, m_port);
+        m_socket->SendTo(ack, 0, to);
+        m_ackSent++;
     }
 
     void RoceNic::CheckAckTimeout(uint32_t psn) {
         if (m_sentPsn.count(psn)) {
             std::cout << "NIC timeout for PSN=" << psn << ", retransmitting NOT YET IMPLEMENTED" << std::endl;
-            // TODO: Retransmit packet with this PSN (if needed)
         }
     }
 
@@ -174,17 +168,16 @@ namespace ns3 {
             return Ipv4Address::GetAny();
         }
 
-        int32_t nInterfaces = ipv4->GetNInterfaces();
-        std::cout << "[NIC] Numero interfacce trovate: " << nInterfaces << std::endl;
-
-        for (uint32_t i = 0; i < ipv4->GetNInterfaces(); ++i) {
-            for (uint32_t j = 0; j < ipv4->GetNAddresses(i); ++j) {
-                std::cout << "Interfaccia " << i << ", address " << j << ": "
-                          << ipv4->GetAddress(i, j).GetLocal() << std::endl;
-            }
-        }
-
-        return ipv4->GetAddress(1, 0).GetLocal(); // ATTENZIONE: può fallire
+        return ipv4->GetAddress(1, 0).GetLocal();
     }
+
+    uint32_t RoceNic::GetReceivedPsn() {
+        return m_dataReceived;
+    }
+
+    uint32_t RoceNic::GetAckReceived() {return m_ackReceived; };
+    uint32_t RoceNic::GetAckSent(){return m_ackSent;};
+    uint32_t RoceNic::GetDataReceived(){return m_dataReceived;};
+    uint32_t RoceNic::GetDataSent(){return m_dataSent;};
 
 } // namespace ns3

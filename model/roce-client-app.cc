@@ -90,7 +90,7 @@ namespace ns3 {
     }
 
     uint32_t RoceClientApp::GetPacketsReceived() const {
-        return m_packetsReceived;
+        return m_nic->GetReceivedPsn();
     }
 
     uint32_t RoceClientApp::GetPacketsSent() const{

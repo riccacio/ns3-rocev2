@@ -30,6 +30,16 @@ namespace ns3 {
 
         Ipv4Address GetPeerAddress();
 
+        uint32_t GetReceivedPsn();
+
+
+        void SetAckCallback(Callback<void, uint32_t> cb);
+
+        uint32_t GetAckReceived();
+        uint32_t GetAckSent();
+        uint32_t GetDataReceived();
+        uint32_t GetDataSent();
+
 
     private:
         virtual void StartApplication() override;
@@ -57,6 +67,12 @@ namespace ns3 {
         std::set<uint32_t> m_receivedPsn;
         std::map<uint32_t, Ptr<Packet>> m_reorderBuffer;
         uint32_t m_expectedPsn = 100;
+
+        Callback<void, uint32_t> m_ackCb{};
+        uint32_t m_ackReceived = 0;
+        uint32_t m_ackSent = 0;
+        uint32_t m_dataReceived = 0;
+        uint32_t m_dataSent = 0;
 
         std::queue<Ptr<Packet>> m_sendQueue;
         Callback<void, Ptr<Packet>> m_receiveCallback;

@@ -43,12 +43,12 @@ int main(int argc, char *argv[]) {
     // Path 2 (lento)
     PointToPointHelper p3;
     p3.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-    p3.SetChannelAttribute("Delay", StringValue("2ms"));
+    p3.SetChannelAttribute("Delay", StringValue("5ms"));
     NetDeviceContainer devC = p3.Install(clientNode.Get(0), switch2Node.Get(0));
 
     PointToPointHelper p4;
     p4.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-    p4.SetChannelAttribute("Delay", StringValue("2ms"));
+    p4.SetChannelAttribute("Delay", StringValue("5ms"));
     NetDeviceContainer devD = p4.Install(switch2Node.Get(0), serverNode.Get(0));
 
     Ipv4AddressHelper ipv4;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     std::cout << "\n--- STATISTICHE ---" << std::endl;
     std::cout << "Totale pacchetti inviati dal client: " << clientApp->GetPacketsSent() << std::endl;
     std::cout << "Totale pacchetti ricevuti dal server: " << serverApp->GetPacketsReceived() << std::endl;
-    std::cout << "Totale pacchetti ricevuti dal client: " << clientApp->GetPacketsReceived() << std::endl;
+    std::cout << "Totale pacchetti ricevuti dal client: " << clientNic->GetAckReceived() << std::endl;
 
     return 0;
 }

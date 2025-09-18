@@ -21,7 +21,7 @@ ns3-rocev2/
 
 - `ns-3-dev` (installato localmente fuori da questa repo)
 - `CMake ≥ 3.10`
-- `Ninja` (consigliato per CLion)
+- `Ninja`
 - Compiler C++20 (Clang/LLVM, GCC ≥ 10)
 
 ---
@@ -49,9 +49,6 @@ cd ns3-rocev2
 cmake -S . -B cmake-build-debug -G Ninja
 cmake --build cmake-build-debug
 ```
-
-> Su CLion: impostare `ns-3-dev` come progetto esterno e configurare il generatore `Ninja`.
-
 ---
 
 ## Esecuzione

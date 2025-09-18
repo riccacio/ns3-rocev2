@@ -54,7 +54,7 @@ cmake --build cmake-build-debug
 ## Esecuzione
 
 ```bash
-./cmake-build-debug/main.cpp
+./cmake-build-debug/main.cc
 ```
 
 L'output viene scritto nel terminale

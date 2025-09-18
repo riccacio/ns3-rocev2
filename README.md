@@ -50,7 +50,7 @@ cmake -S . -B cmake-build-debug -G Ninja
 cmake --build cmake-build-debug
 ```
 
-> Se usi CLion: imposta `ns-3-dev` come progetto esterno e configura il generatore `Ninja`.
+> Su CLion: impostare `ns-3-dev` come progetto esterno e configurare il generatore `Ninja`.
 
 ---
 
@@ -71,23 +71,6 @@ rocev2.log
 ## Note
 
 - **Il modulo non include NS-3**: NS-3 è esterno e va mantenuto separato.
-- Testato su **macOS ARM64 (Apple Silicon)** e **Linux Ubuntu**.
+- Testato su **macOS ARM64 (Apple Silicon)**.
 
 ---
-
-## Licenza
-
-Distribuito sotto licenza MIT:
-
-```
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions...
-```

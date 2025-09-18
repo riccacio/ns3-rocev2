@@ -54,7 +54,7 @@ cmake --build cmake-build-debug
 ## Esecuzione
 
 ```bash
-./cmake-build-debug/rocev2-skeleton
+./cmake-build-debug/main.cpp
 ```
 
 L'output viene scritto nel terminale

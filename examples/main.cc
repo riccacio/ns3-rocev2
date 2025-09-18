@@ -4,13 +4,9 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/netanim-module.h"
 
-
 #include "../model/roce-client-app.h"
 #include "../model/roce-server-app.h"
-#include "../model/roce-header-tag.h"
-#include "../model/roce-forwarder-app.h"
 
-#include <fstream>
 #include <iostream>
 
 using namespace ns3;
@@ -24,7 +20,6 @@ int main(int argc, char *argv[]) {
     switch1Node.Create(1);
     switch2Node.Create(1);
     serverNode.Create(1);
-
 
     InternetStackHelper stack;
     stack.InstallAll();
@@ -53,16 +48,16 @@ int main(int argc, char *argv[]) {
 
     Ipv4AddressHelper ipv4;
 
-    ipv4.SetBase("10.1.1.0", "255.255.255.0");
+    ipv4.SetBase("192.168.1.0", "255.255.255.0");
     Ipv4InterfaceContainer if1 = ipv4.Assign(devA);
 
-    ipv4.SetBase("10.1.2.0", "255.255.255.0");
+    ipv4.SetBase("192.168.2.0", "255.255.255.0");
     Ipv4InterfaceContainer if2 = ipv4.Assign(devB);
 
-    ipv4.SetBase("10.1.3.0", "255.255.255.0");
+    ipv4.SetBase("192.168.3.0", "255.255.255.0");
     Ipv4InterfaceContainer if3 = ipv4.Assign(devC);
 
-    ipv4.SetBase("10.1.4.0", "255.255.255.0");
+    ipv4.SetBase("192.168.4.0", "255.255.255.0");
     Ipv4InterfaceContainer if4 = ipv4.Assign(devD);
 
     // Routing IP automatico
@@ -72,14 +67,14 @@ int main(int argc, char *argv[]) {
     Ptr<RoceNic> serverNic = CreateObject<RoceNic>();
     serverNode.Get(0)->AddApplication(serverNic);
     serverNic->Setup(4791);
-    //serverNic->SetPeer(if1.GetAddress(1)); // IP del Client
+    serverNic->SetPeer(if1.GetAddress(1)); // IP del Client
     serverNic->SetStartTime(Seconds(0));
     serverNic->SetStopTime(Seconds(1.5));
 
     // Server App
     Ptr<RoceServerApp> serverApp = CreateObject<RoceServerApp>();
     serverApp->SetNic(serverNic);
-    //serverApp->Setup(InetSocketAddress(if4.GetAddress(1),4791));
+    serverApp->Setup(InetSocketAddress(if4.GetAddress(1),4791));
     serverNode.Get(0)->AddApplication(serverApp);
     serverApp->SetStartTime(Seconds(0));
     serverApp->SetStopTime(Seconds(1.5));
@@ -93,8 +88,8 @@ int main(int argc, char *argv[]) {
     clientNic->SetStopTime(Seconds(2.0));
 
     // Client App
-    Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>(InetSocketAddress(if2.GetAddress(1), 4791), // 10.1.2.2 (server lato path1)
-                                                               InetSocketAddress(if4.GetAddress(1), 4791)); // 10.1.4.2 (server lato path2)
+    Ptr<RoceClientApp> clientApp = CreateObject<RoceClientApp>(InetSocketAddress(if2.GetAddress(1), 4791), // 192.168.2.2 (server lato path1)
+                                                               InetSocketAddress(if4.GetAddress(1), 4791)); // 192.168.4.2 (server lato path2)
     clientApp->Setup(    InetSocketAddress(if2.GetAddress(1), 4791), //path 1 verso switch 1
                          InetSocketAddress(if4.GetAddress(1), 4791), //path 2 verso switch 2
                          1024,
@@ -105,20 +100,16 @@ int main(int argc, char *argv[]) {
     clientNode.Get(0)->AddApplication(clientApp);
     clientApp->SetStartTime(Seconds(0.5));
     clientApp->SetStopTime(Seconds(1.5));
-/*
-    // NetAnim
+
+    //TODO da implementare la rappresentazione grafica NetAnim
+    /*
     AnimationInterface::SetConstantPosition(clientNode.Get(0), 10, 30);
     AnimationInterface::SetConstantPosition(switch1Node.Get(0), 30, 40);
     AnimationInterface::SetConstantPosition(switch2Node.Get(0), 30, 20);
     AnimationInterface::SetConstantPosition(serverNode.Get(0), 50, 30);
     AnimationInterface anim("rocev2.xml");
-
-
     */
 
-
-
-    //std::cout << "Client NIC peer address: " << clientNic->GetPeerAddress() << std::endl;
     LogComponentEnable("RoceNic", LOG_LEVEL_INFO);
     Simulator::Run();
     Simulator::Destroy();

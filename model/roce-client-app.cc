@@ -44,26 +44,21 @@ namespace ns3 {
     }
 
     void RoceClientApp::SendPacket() {
-        // crea il payload
         Ptr<Packet> packet = Create<Packet>(m_packetSize);
 
-        // alterna i path: pari -> path1 (veloce), dispari -> path2 (lento)
+        // alterna i path:
         const bool usePath1 = (m_psn % 2 == 0);
         const Address& dst = usePath1 ? m_peerPath1 : m_peerPath2;
 
-        // imposta al NIC l’IP di destinazione (quello del SERVER sulla sottorete corretta)
         Ipv4Address peerIp = InetSocketAddress::ConvertFrom(dst).GetIpv4();
         m_nic->SetPeer(peerIp);
 
-        // invia tramite NIC (il NIC aggiunge il RoCE tag)
         m_nic->Send(packet);
 
-        // log
         std::cout << "CLIENT invia PSN=" << m_psn
                   << " via path " << (usePath1 ? 1 : 2)
                   << " (peer=" << peerIp << ")\n";
 
-        // bookkeeping e schedule del prossimo invio
         ++m_psn;
         ++m_sent;
         if (m_sent < m_nPackets) {
@@ -89,17 +84,8 @@ namespace ns3 {
         }
     }
 
-    uint32_t RoceClientApp::GetPacketsReceived() const {
-        return m_nic->GetReceivedPsn();
-    }
-
-    uint32_t RoceClientApp::GetPacketsSent() const{
-        return m_sent;
-    }
-
-
-    void RoceClientApp::SetNic(Ptr<RoceNic> nic) {
-        m_nic = nic;
-    }
+    uint32_t RoceClientApp::GetPacketsReceived() const {return m_nic->GetReceivedPsn();}
+    uint32_t RoceClientApp::GetPacketsSent() const {return m_sent;}
+    void RoceClientApp::SetNic(Ptr<RoceNic> nic) {m_nic = nic;}
 
 } // namespace ns3

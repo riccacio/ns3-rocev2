@@ -40,10 +40,6 @@ namespace ns3 {
         m_ackCb = cb;
     }
 
-    Ipv4Address RoceNic::GetPeerAddress(){
-        return m_peerAddr;
-    }
-
     void RoceNic::StartApplication() {
         m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 
@@ -111,11 +107,10 @@ namespace ns3 {
                 // ACK ricevuto
                 m_sentPsn.erase(tag.GetPsn());
                 m_ackReceived++;
-                if (!m_ackCb.IsNull()) m_ackCb(tag.GetPsn()); // notifica opzionale a chi vuole (es. ClientApp)
+                if (!m_ackCb.IsNull()) m_ackCb(tag.GetPsn());
                 continue;
             }
 
-            // Data packet ricevuto
             m_dataReceived++;
 
             if (m_receivedPsn.insert(tag.GetPsn()).second) {
@@ -130,7 +125,7 @@ namespace ns3 {
                 } else {
                     m_reorderBuffer[tag.GetPsn()] = packet;
                 }
-                // ⬇️ Genera ACK con il NIC del server
+
                 SendAck(tag.GetPsn(), from);
             }
         }
@@ -141,7 +136,6 @@ namespace ns3 {
         RoceHeaderTag ackTag(0x5678, 0xFF, psn, psn, GetLocalAddress());
         ack->AddPacketTag(ackTag);
 
-        // rimanda all'IP sorgente del pacchetto, forzando la porta 4791 del peer
         Ipv4Address srcIp = InetSocketAddress::ConvertFrom(from).GetIpv4();
         Address to = InetSocketAddress(srcIp, m_port);
         m_socket->SendTo(ack, 0, to);
@@ -154,12 +148,6 @@ namespace ns3 {
         }
     }
 
-    /*Ipv4Address RoceNic::GetLocalAddress() const {
-
-        Ptr<Ipv4> ipv4 = GetNode()->GetObject<Ipv4>();
-        return ipv4->GetAddress(1, 0).GetLocal(); // Usa la prima interfaccia utile
-    }*/
-
     Ipv4Address RoceNic::GetLocalAddress() const {
         Ptr<Ipv4> ipv4 = GetNode()->GetObject<Ipv4>();
 
@@ -171,13 +159,11 @@ namespace ns3 {
         return ipv4->GetAddress(1, 0).GetLocal();
     }
 
-    uint32_t RoceNic::GetReceivedPsn() {
-        return m_dataReceived;
-    }
-
-    uint32_t RoceNic::GetAckReceived() {return m_ackReceived; };
-    uint32_t RoceNic::GetAckSent(){return m_ackSent;};
-    uint32_t RoceNic::GetDataReceived(){return m_dataReceived;};
-    uint32_t RoceNic::GetDataSent(){return m_dataSent;};
+    uint32_t RoceNic::GetReceivedPsn() {return m_dataReceived;}
+    uint32_t RoceNic::GetAckReceived() {return m_ackReceived; }
+    uint32_t RoceNic::GetAckSent(){return m_ackSent;}
+    uint32_t RoceNic::GetDataReceived(){return m_dataReceived;}
+    uint32_t RoceNic::GetDataSent(){return m_dataSent;}
+    Ipv4Address RoceNic::GetPeerAddress(){return m_peerAddr;}
 
 } // namespace ns3

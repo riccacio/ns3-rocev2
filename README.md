@@ -60,11 +60,7 @@ cmake --build cmake-build-debug
 ./cmake-build-debug/rocev2-skeleton
 ```
 
-L'output viene scritto nel file:
-
-```bash
-rocev2.log
-```
+L'output viene scritto nel terminale
 
 ---
 
